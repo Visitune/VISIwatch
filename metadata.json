@@ -1,0 +1,5 @@
+{
+  "name": "VISIwatch AI",
+  "description": "Plateforme professionnelle de veille réglementaire et sanitaire pour l'industrie agroalimentaire. Intègre l'analyse IA via Gemini pour résumer les textes légaux et alertes (RASFF, Galatée Pro, EFSA, etc.).",
+  "requestFramePermissions": []
+}

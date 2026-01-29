@@ -1,0 +1,16 @@
+const RSS_FEEDS = {
+  "Food Safety News": "https://feeds.feedburner.com/foodsafetynews/mRcs",
+  "ANSES": "https://www.anses.fr/rss.xml",
+  "Food safety Magazine": "https://www.food-safety.com/rss/topic/296",
+  "Food Navigator": "https://www.foodnavigator.com/arc/outboundfeeds/rss/",
+  "EFSA": "https://www.efsa.europa.eu/en/all/rss",
+  
+  // Ajoutez vos nouvelles sources ici
+  "RASFF EU Feed": "https://webgate.ec.europa.eu/rasff-window/backend/public/consumer/rss/all/",
+  "US FDA Press Release": "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml",
+  "Food GOV UK": "https://www.food.gov.uk/rss-feed/news",
+  "US CDC": "https://www2c.cdc.gov/podcasts/createrss.asp?c=146",
+  "Food in Canada": "https://www.foodincanada.com/feed/",
+  "FoodreadyAI": "https://foodready.ai/feed/",
+  "Legifrance Alimentaire": "https://agriculture.gouv.fr/rss.xml",
+  "DGCCRF, French Fraud": "https://www.economie.gouv.fr/dgccrf/rss"
