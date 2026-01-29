@@ -106,32 +106,15 @@ const cleanText = (str: string): string => {
 };
 
 // ============================================================================
-// 3. MOTEUR D'EXTRACTION (PROXY RACE - STRATÉGIE ROBUSTE)
+// 3. MOTEUR D'EXTRACTION (PROXY VERCEL)
 // ============================================================================
-
-// Liste des proxys à tester en parallèle (Course)
-const getProxyUrls = (targetUrl: string) => [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-    `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
-];
-
-// Helper pour fetcher avec timeout
-const fetchWithTimeout = async (url: string, timeout = 15000) => {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout);
-    try {
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(id);
-        return response;
-    } catch (error) {
-        clearTimeout(id);
-        throw error;
-    }
-};
 
 const fetchRSS = async (feedKey: keyof typeof RSS_FEEDS): Promise<WatchItem[]> => {
     const config = RSS_FEEDS[feedKey];
-    const proxies = getProxyUrls(config.url);
+    
+    // UTILISATION DU PROXY INTERNE VERCEL
+    // On appelle /api/proxy qui est hébergé sur le même domaine, donc pas de problème CORS initial
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent(config.url)}`;
 
     // Fonction de parsing XML unifiée
     const parseXML = (xmlText: string): WatchItem[] => {
@@ -180,35 +163,26 @@ const fetchRSS = async (feedKey: keyof typeof RSS_FEEDS): Promise<WatchItem[]> =
         });
     };
 
-    // Stratégie "Race" : On lance les requêtes simultanément vers les proxys
     try {
-        const fetchPromises = proxies.map(url => 
-            fetchWithTimeout(url).then(res => {
-                if (!res.ok) throw new Error('Proxy error');
-                return res.text();
-            })
-        );
+        // Appel au proxy local
+        const response = await fetch(proxyUrl);
+        
+        if (!response.ok) {
+            console.warn(`Erreur récupération flux ${config.name}: ${response.statusText}`);
+            return [];
+        }
 
-        // Manual implementation of Promise.any behavior
-        const xmlString = await new Promise<string>((resolve, reject) => {
-            let errors: any[] = [];
-            let rejectedCount = 0;
-            if (fetchPromises.length === 0) return reject(new Error("No proxies defined"));
-            
-            fetchPromises.forEach(p => {
-                p.then(resolve).catch(e => {
-                    errors.push(e);
-                    rejectedCount++;
-                    if (rejectedCount === fetchPromises.length) {
-                        reject(new Error("All proxies failed"));
-                    }
-                });
-            });
-        });
+        const xmlString = await response.text();
+        
+        // Petit check si le proxy a renvoyé une erreur JSON
+        if (xmlString.startsWith('{') && xmlString.includes('"error"')) {
+            console.error(`Erreur Proxy pour ${config.name}:`, xmlString);
+            return [];
+        }
 
-        let items = parseXML(xmlString);
-        return items;
+        return parseXML(xmlString);
     } catch (e) {
+        console.error(`Erreur réseau pour ${config.name}:`, e);
         return [];
     }
 };
@@ -258,6 +232,7 @@ const fetchOpenFDA = async (): Promise<WatchItem[]> => {
 // ============================================================================
 
 export const fetchRealFeed = async (): Promise<WatchItem[]> => {
+  // On mélange les appels API directs et les appels via RSS (qui passent maintenant par notre proxy)
   const promises = [
     fetchRappelConso(),
     fetchOpenFDA(),
