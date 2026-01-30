@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ExternalLink, BookOpen, Globe, FileText, Newspaper, Activity, BrainCircuit, ShieldCheck, List, Search, Landmark } from 'lucide-react';
+import { ExternalLink, BookOpen, Globe, FileText, Newspaper, Activity, BrainCircuit, ShieldCheck, List, Search, Key, Save, Eye, EyeOff, Trash2, CheckCircle } from 'lucide-react';
+import { useApiKey } from '../contexts/ApiKeyContext';
 
 const DIRECTORY_LINKS = [
   {
@@ -93,20 +94,49 @@ const DIRECTORY_LINKS = [
 ];
 
 export const Settings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'resources' | 'guide'>('resources');
+  const [activeTab, setActiveTab] = useState<'resources' | 'guide' | 'api'>('api');
+  const { apiKey, setApiKey, removeApiKey } = useApiKey();
+  const [inputValue, setInputValue] = useState('');
+  const [showKey, setShowKey] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    if (inputValue.trim()) {
+      setApiKey(inputValue);
+      setInputValue('');
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    }
+  };
+
+  const handleRemove = () => {
+    removeApiKey();
+    setInputValue('');
+  };
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Centre de Ressources & Aide</h1>
-        <p className="text-gray-500">Documentation et accès aux sources officielles.</p>
+        <h1 className="text-2xl font-bold text-gray-900">Paramètres & Ressources</h1>
+        <p className="text-gray-500">Configuration de l'IA et accès aux sources officielles.</p>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex space-x-4 border-b border-gray-200">
+      <div className="flex space-x-4 border-b border-gray-200 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('api')}
+          className={`pb-3 px-1 flex items-center gap-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'api' 
+              ? 'border-emerald-600 text-emerald-700' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <Key className="w-4 h-4" />
+          Clé API Gemini
+        </button>
         <button
           onClick={() => setActiveTab('resources')}
-          className={`pb-3 px-1 flex items-center gap-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`pb-3 px-1 flex items-center gap-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'resources' 
               ? 'border-emerald-600 text-emerald-700' 
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -117,7 +147,7 @@ export const Settings: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('guide')}
-          className={`pb-3 px-1 flex items-center gap-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`pb-3 px-1 flex items-center gap-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'guide' 
               ? 'border-emerald-600 text-emerald-700' 
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -127,6 +157,108 @@ export const Settings: React.FC = () => {
           Guide d'utilisation
         </button>
       </div>
+
+      {/* CONTENU : API KEY */}
+      {activeTab === 'api' && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in max-w-2xl">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="p-3 bg-purple-50 rounded-lg text-purple-600">
+              <BrainCircuit className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Configuration de l'IA Gemini</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Pour utiliser les fonctions d'analyse (résumés, alertes, plans d'action), vous devez fournir une clé API Google Gemini.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {apiKey ? (
+              <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white p-2 rounded-full shadow-sm">
+                    <CheckCircle className="w-5 h-5 text-emerald-500" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-emerald-900">Clé API active</p>
+                    <p className="text-xs text-emerald-700">Votre clé est enregistrée localement dans votre navigateur.</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={handleRemove}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Supprimer la clé"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            ) : (
+              <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-4 text-sm text-yellow-800">
+                <p className="font-medium">Aucune clé configurée.</p>
+                <p className="mt-1">L'analyse IA ne fonctionnera pas sans clé valide.</p>
+              </div>
+            )}
+
+            {!apiKey && (
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">Entrez votre clé API Gemini</label>
+                <div className="relative">
+                  <input
+                    type={showKey ? "text" : "password"}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="AIzaSy..."
+                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
+                  />
+                  <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <button
+                    type="button"
+                    onClick={() => setShowKey(!showKey)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <div className="flex justify-between items-center mt-2">
+                   <a 
+                     href="https://aistudio.google.com/app/apikey" 
+                     target="_blank" 
+                     rel="noreferrer"
+                     className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                   >
+                     Obtenir une clé gratuitement <ExternalLink className="w-3 h-3" />
+                   </a>
+                   <button
+                    onClick={handleSave}
+                    disabled={!inputValue.trim()}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition-colors ${
+                      inputValue.trim() ? 'bg-emerald-600 hover:bg-emerald-700 shadow-sm' : 'bg-gray-300 cursor-not-allowed'
+                    }`}
+                   >
+                     <Save className="w-4 h-4" />
+                     Enregistrer
+                   </button>
+                </div>
+              </div>
+            )}
+            
+            {saved && (
+              <div className="flex items-center gap-2 text-emerald-600 text-sm animate-fade-in justify-end">
+                <CheckCircle className="w-4 h-4" />
+                <span>Clé enregistrée avec succès !</span>
+              </div>
+            )}
+          </div>
+          
+          <div className="mt-6 pt-4 border-t border-gray-100">
+             <p className="text-xs text-gray-400 text-center">
+               La clé est stockée uniquement dans la session de votre navigateur (SessionStorage).<br/>
+               Elle n'est jamais envoyée à nos serveurs, mais directement à l'API Google.
+             </p>
+          </div>
+        </div>
+      )}
 
       {/* CONTENU : ANNUAIRE */}
       {activeTab === 'resources' && (
@@ -260,7 +392,7 @@ export const Settings: React.FC = () => {
       )}
       
       <div className="px-6 py-4 flex justify-between items-center text-xs text-gray-400">
-          <span>v1.9.1 (VISIwatch AI)</span>
+          <span>v1.9.2 (VISIwatch AI)</span>
           <span>© 2024 VISIwatch AI</span>
       </div>
     </div>

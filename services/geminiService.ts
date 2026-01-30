@@ -1,8 +1,15 @@
 import { GoogleGenAI } from "@google/genai";
 
 export const analyzeRegulation = async (text: string, context: 'summary' | 'impact' | 'action'): Promise<string> => {
-  // Use process.env.API_KEY directly as required by guidelines.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Récupération de la clé depuis le stockage utilisateur ou l'environnement serveur
+  const userKey = sessionStorage.getItem('GEMINI_API_KEY');
+  const apiKey = userKey && userKey.length > 5 ? userKey : process.env.API_KEY;
+
+  if (!apiKey) {
+      throw new Error("Clé API manquante. Veuillez configurer votre clé dans l'onglet 'Paramètres'.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
   let prompt = "";
   
@@ -31,8 +38,8 @@ export const analyzeRegulation = async (text: string, context: 'summary' | 'impa
     return response.text || "Aucune analyse générée.";
   } catch (error: any) {
     console.error("Gemini API Error:", error);
-    if (error.message?.includes('403') || error.message?.includes('key')) {
-        throw new Error("Clé API invalide ou expirée (Configuration Serveur).");
+    if (error.message?.includes('403') || error.message?.includes('key') || error.message?.includes('permission')) {
+        throw new Error("Clé API invalide ou expirée. Vérifiez vos paramètres.");
     }
     throw new Error("Erreur lors de l'analyse avec Gemini. Vérifiez votre connexion.");
   }
